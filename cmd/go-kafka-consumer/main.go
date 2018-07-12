@@ -1,0 +1,118 @@
+package main
+
+import (
+	"errors"
+	"flag"
+	"math"
+	"os"
+	"os/signal"
+	"strings"
+	"syscall"
+	"time"
+
+	"github.com/Shopify/sarama"
+	cluster "github.com/bsm/sarama-cluster"
+	uuid "github.com/satori/go.uuid"
+	"github.com/sirupsen/logrus"
+)
+
+const (
+	defaultConfigPath = "etc/config.yaml"
+)
+
+var (
+	log          = logrus.New()
+	errNoBrokers = errors.New("at least one broker URL is required")
+	errNoTopic   = errors.New("a topic is required")
+	errNoSchemas = errors.New("a schema is required for message type Avro")
+)
+
+func main() {
+	// Read config from command line
+	brokers := flag.String("bootstrap-server", "", "Comma separated Kafka Broker URLs")
+	topic := flag.String("topic", "", "Topic name")
+	groupID := flag.String("group", "", "Optional, pass the Kafka GroupId")
+	fromBeginning := flag.Bool("fromBeginning", false, "Optional, if passed the program will start at the earliest offset")
+	msgType := flag.String("type", "avro", "Optional, pass message type defaults to Avro")
+	schemas := flag.String("schemas", "", "For protocols like Avro, pass a path to the schema")
+
+	err := checkArgs(brokers, topic, groupID, msgType, schemas)
+	if err != nil {
+		log.Fatalf("Could not validate args: %s\n", err.Error())
+	}
+
+	brokersSlice := strings.Split(*brokers, ",")
+
+	// Create a new consumer, blocks until connection to brokers established
+	consumer := newConsumer(brokersSlice, *topic, *groupID, *fromBeginning)
+
+	// Insert parsing logic here ()
+
+	// Keep program running until the user
+	// triggers a shutdown
+	signals := make(chan os.Signal, 1)
+	signal.Notify(signals, os.Interrupt, os.Kill, syscall.SIGINT, syscall.SIGTERM, syscall.SIGHUP, syscall.SIGQUIT)
+	<-signals
+
+	// Send a signal to done to trigger parser
+	// shutdown
+	done <- struct{}{}
+}
+
+func checkArgs(brokers, topic, groupID, msgType, schemas *string) error {
+	if *brokers == "" {
+		return errNoBrokers
+	}
+
+	if *topic == "" {
+		return errNoTopic
+	}
+
+	if strings.EqualFold(*msgType, "avro") && *schemas == "" {
+		return errNoSchemas
+	}
+
+	return nil
+}
+
+func newConsumer(brokers []string, topic string, groupID string, fromBeginning bool) *cluster.Consumer {
+	// Sarama cluster config
+	config := cluster.NewConfig()
+	config.Consumer.Return.Errors = true
+	config.Group.Return.Notifications = true
+	config.Version = sarama.V0_11_0_0
+
+	if fromBeginning {
+		config.Consumer.Offsets.Initial = sarama.OffsetOldest
+	}
+
+	if groupID == "" {
+		groupID = uuid.NewV4().String()
+	}
+
+	// Sarama cluster accepts multiple topics,
+	// this doesn't.
+	topics := []string{
+		topic,
+	}
+
+	var counter = 1.
+	var consumer *cluster.Consumer
+	var err error
+
+	// Attempt to connect to brokers forever w/ exponential backoff
+	for {
+		consumer, err = cluster.NewConsumer(brokers, groupID, topics, config)
+		if err == nil {
+			break
+		}
+
+		backoff := 100 * time.Millisecond * time.Duration(math.Pow(2, counter))
+		counter++
+		log.Errorf("Unable to start consumer: %s\n", err.Error())
+		log.Errorf("Backing off for %d ms...\n", backoff/time.Millisecond)
+		time.Sleep(backoff)
+	}
+
+	return consumer
+}
