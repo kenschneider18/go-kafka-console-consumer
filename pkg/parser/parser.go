@@ -3,7 +3,6 @@ package parser
 import (
 	"encoding/json"
 
-	"github.com/Shopify/sarama"
 	"github.com/bsm/sarama-cluster"
 	"github.com/sirupsen/logrus"
 )
@@ -20,7 +19,7 @@ type (
 
 		// Decode takes in a Kafka message and returns an interface{}
 		// which can be read by json.Marshal() and an error
-		Decode(msg *sarama.ConsumerMessage) (interface{}, error)
+		Decode(msg interface{}) (interface{}, error)
 	}
 
 	// Parser consumes from a Kafka topic, calls
