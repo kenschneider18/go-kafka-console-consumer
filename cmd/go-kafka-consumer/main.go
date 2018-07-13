@@ -7,6 +7,7 @@ import (
 	"math"
 	"os"
 	"os/signal"
+	"plugin"
 	"strings"
 	"syscall"
 	"time"
@@ -93,9 +94,32 @@ func checkArgs(brokers, topic, groupID, msgType, schemas *string) error {
 }
 
 func getDecoder(msgType string) parser.Decoder {
-	return &decoders.JSONDecoder{
-		Log: log,
+	if msgType == "json" {
+		return &decoders.JSONDecoder{
+			Log: log,
+		}
 	}
+
+	// Open the plugin
+	plug, err := plugin.Open(msgType)
+	if err != nil {
+		log.Fatalf("Error linking %s decoder: %s\n", msgType, err.Error())
+	}
+
+	// Look for exported Decoder
+	symDecoder, err := plug.Lookup("Decoder")
+	if err != nil {
+		log.Fatalf("Error loading %s Decoder: %s\n", msgType, err.Error())
+	}
+
+	// Assert Decoder variable conforms to the
+	// parser.Decoder interface
+	decoder := symDecoder.(parser.Decoder)
+	/*if !ok {
+		log.Fatalf("%s decoder failed type assertion.", msgType)
+	}*/
+
+	return decoder
 }
 
 func newConsumer(brokers []string, topic string, groupID string, fromBeginning bool) *cluster.Consumer {
