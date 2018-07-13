@@ -3,6 +3,7 @@ package main
 import (
 	"errors"
 	"flag"
+	"fmt"
 	"math"
 	"os"
 	"os/signal"
@@ -21,10 +22,15 @@ const (
 )
 
 var (
-	log          = logrus.New()
-	errNoBrokers = errors.New("at least one broker URL is required")
-	errNoTopic   = errors.New("a topic is required")
-	errNoSchemas = errors.New("a schema is required for message type Avro")
+	log            = logrus.New()
+	errNoBrokers   = errors.New("at least one broker URL is required")
+	errNoTopic     = errors.New("a topic is required")
+	errNoSchemas   = errors.New("a schema is required for message type Avro")
+	supportedTypes = []string{
+		"avro",
+		"msgpack",
+		"json",
+	}
 )
 
 func main() {
@@ -33,8 +39,9 @@ func main() {
 	topic := flag.String("topic", "", "Topic name")
 	groupID := flag.String("group", "", "Optional, pass the Kafka GroupId")
 	fromBeginning := flag.Bool("fromBeginning", false, "Optional, if passed the program will start at the earliest offset")
-	msgType := flag.String("type", "avro", "Optional, pass message type defaults to Avro")
-	schemas := flag.String("schemas", "", "For protocols like Avro, pass a path to the schema")
+	msgType := flag.String("type", "avro",
+		fmt.Sprintf("Pass the supported type name here or the path to your plugin. Out of the box supported types are %s", strings.Join(supportedTypes, ", ")))
+	schemas := flag.String("schemas", "", "If the message type uses schemas, pass them here.")
 
 	err := checkArgs(brokers, topic, groupID, msgType, schemas)
 	if err != nil {
@@ -74,6 +81,8 @@ func checkArgs(brokers, topic, groupID, msgType, schemas *string) error {
 
 	return nil
 }
+
+func checkDecoder()
 
 func newConsumer(brokers []string, topic string, groupID string, fromBeginning bool) *cluster.Consumer {
 	// Sarama cluster config
