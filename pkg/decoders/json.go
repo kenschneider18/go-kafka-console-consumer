@@ -22,7 +22,7 @@ func (j *JSONDecoder) ValidateSchemas(schemas string) error {
 
 // Decode takes a sarama consumermessage
 func (j *JSONDecoder) Decode(msg *sarama.ConsumerMessage) (interface{}, error) {
-	j.Log.Infof("Decoding JSON message...\n")
+	j.Log.Infof("Decoding JSON message...")
 	// Any valid JSON is more than 1 byte in length
 	if length := len(msg.Value); length < 1 {
 		return nil, errors.New("Invalid JSON, length < 1")

@@ -63,18 +63,18 @@ func (p *Parser) Serve() chan struct{} {
 			case msg, more := <-p.consumer.Messages():
 				if more {
 					// Initial logging here
-					p.log.Infof("Offset: %d\n", msg.Offset)
-					p.log.Infof("Headers:\n")
+					p.log.Infof("Offset: %d", msg.Offset)
+					p.log.Infof("Headers:")
 					for _, header := range msg.Headers {
 						if header != nil {
-							p.log.Infof("\t%s: %s\n", string(header.Key), string(header.Value))
+							p.log.Infof("\t%s: %s", string(header.Key), string(header.Value))
 						}
 					}
 
 					// Use the passed decoder to read the message to a map
 					data, err := p.decoder.Decode(msg)
 					if err != nil {
-						p.log.Errorf("Error decoding message: %s\n", err.Error())
+						p.log.Errorf("Error decoding message: %s", err.Error())
 					}
 
 					// Print message as JSON
@@ -82,14 +82,14 @@ func (p *Parser) Serve() chan struct{} {
 				}
 			case err, more := <-p.consumer.Errors():
 				if more {
-					p.log.Errorf("Error: %s\n", err.Error())
+					p.log.Errorf("Error: %s", err.Error())
 				}
 			case notification, more := <-p.consumer.Notifications():
 				if more {
-					p.log.Warnf("Rebalanced: %+v\n", notification)
+					p.log.Warnf("Rebalanced: %+v", notification)
 				}
 			case <-done:
-				p.log.Infof("Processed a total of %d messages.\n", messageCount)
+				p.log.Infof("Processed a total of %d messages.", messageCount)
 				return
 			}
 		}
@@ -101,9 +101,9 @@ func (p *Parser) Serve() chan struct{} {
 func (p *Parser) printJSON(data interface{}) {
 	marshalled, err := json.MarshalIndent(data, "", "     ")
 	if err != nil {
-		p.log.Errorf("Could not process message: %s\n", err.Error())
+		p.log.Errorf("Could not process message: %s", err.Error())
 		return
 	}
 
-	p.log.Infof("Message: %s\n", string(marshalled))
+	p.log.Infof("Message: %s", string(marshalled))
 }

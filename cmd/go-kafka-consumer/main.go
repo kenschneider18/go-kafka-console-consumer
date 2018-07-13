@@ -45,9 +45,11 @@ func main() {
 		fmt.Sprintf("Pass the supported type name here or the path to your plugin. Out of the box supported types are %s", strings.Join(supportedTypes, ", ")))
 	schemas := flag.String("schemas", "", "If the message type uses schemas, pass them here.")
 
+	flag.Parse()
+
 	err := checkArgs(brokers, topic, groupID, msgType, schemas)
 	if err != nil {
-		log.Fatalf("Could not validate args: %s\n", err.Error())
+		log.Fatalf("Could not validate args: %s", err.Error())
 	}
 
 	brokersSlice := strings.Split(*brokers, ",")
@@ -59,7 +61,7 @@ func main() {
 
 	parser, err := parser.New(consumer, *topic, *schemas, decoder, log)
 	if err != nil {
-		log.Fatalf("Could not initialize parser: %s\n", err.Error())
+		log.Fatalf("Could not initialize parser: %s", err.Error())
 	}
 	done := parser.Serve()
 
@@ -130,8 +132,8 @@ func newConsumer(brokers []string, topic string, groupID string, fromBeginning b
 
 		backoff := 100 * time.Millisecond * time.Duration(math.Pow(2, counter))
 		counter++
-		log.Errorf("Unable to start consumer: %s\n", err.Error())
-		log.Errorf("Backing off for %d ms...\n", backoff/time.Millisecond)
+		log.Errorf("Unable to start consumer: %s", err.Error())
+		log.Errorf("Backing off for %d ms...", backoff/time.Millisecond)
 		time.Sleep(backoff)
 	}
 
