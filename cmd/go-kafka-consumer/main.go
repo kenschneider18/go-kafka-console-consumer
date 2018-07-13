@@ -13,6 +13,8 @@ import (
 
 	"github.com/Shopify/sarama"
 	cluster "github.com/bsm/sarama-cluster"
+	"github.com/kenschneider18/go-kafka-consumer/pkg/decoders"
+	"github.com/kenschneider18/go-kafka-consumer/pkg/parser"
 	uuid "github.com/satori/go.uuid"
 	"github.com/sirupsen/logrus"
 )
@@ -53,7 +55,13 @@ func main() {
 	// Create a new consumer, blocks until connection to brokers established
 	consumer := newConsumer(brokersSlice, *topic, *groupID, *fromBeginning)
 
-	// Insert parsing logic here ()
+	decoder := getDecoder(*msgType)
+
+	parser, err := parser.New(consumer, *topic, *schemas, decoder, log)
+	if err != nil {
+		log.Fatalf("Could not initialize parser: %s\n", err.Error())
+	}
+	done := parser.Serve()
 
 	// Keep program running until the user
 	// triggers a shutdown
@@ -82,7 +90,11 @@ func checkArgs(brokers, topic, groupID, msgType, schemas *string) error {
 	return nil
 }
 
-func checkDecoder()
+func getDecoder(msgType string) parser.Decoder {
+	return &decoders.JSONDecoder{
+		Log: log,
+	}
+}
 
 func newConsumer(brokers []string, topic string, groupID string, fromBeginning bool) *cluster.Consumer {
 	// Sarama cluster config
