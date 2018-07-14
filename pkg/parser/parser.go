@@ -3,7 +3,6 @@ package parser
 import (
 	"encoding/json"
 
-	"github.com/Shopify/sarama"
 	"github.com/bsm/sarama-cluster"
 	"github.com/sirupsen/logrus"
 )
@@ -18,9 +17,9 @@ type (
 		// return nil
 		ValidateSchemas(schemas string) error
 
-		// Decode takes in a Kafka message and returns an interface{}
+		// Decode takes in a Kafka message value and returns an interface{}
 		// which can be read by json.Marshal() and an error
-		Decode(msg *sarama.ConsumerMessage) (interface{}, error)
+		Decode([]byte) (interface{}, error)
 	}
 
 	// Parser consumes from a Kafka topic, calls
@@ -72,7 +71,9 @@ func (p *Parser) Serve() chan struct{} {
 					}
 
 					// Use the passed decoder to read the message to a map
-					data, err := p.decoder.Decode(msg)
+					// Only supporting the []byte msg.Value in Decode because
+					// Go plugins have trouble with vendored dependencies
+					data, err := p.decoder.Decode(msg.Value)
 					if err != nil {
 						p.log.Errorf("Error decoding message: %s", err.Error())
 					}
@@ -99,11 +100,11 @@ func (p *Parser) Serve() chan struct{} {
 }
 
 func (p *Parser) printJSON(data interface{}) {
-	marshalled, err := json.MarshalIndent(data, "", "     ")
+	marshalled, err := json.MarshalIndent(data, "", "    ")
 	if err != nil {
 		p.log.Errorf("Could not process message: %s", err.Error())
 		return
 	}
 
-	p.log.Infof("Message: %s", string(marshalled))
+	p.log.Infof("Message:\n%s", string(marshalled))
 }

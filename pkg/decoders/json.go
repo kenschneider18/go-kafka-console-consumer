@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"errors"
 
-	"github.com/Shopify/sarama"
 	"github.com/sirupsen/logrus"
 )
 
@@ -21,12 +20,12 @@ func (j *JSONDecoder) ValidateSchemas(schemas string) error {
 }
 
 // Decode takes a sarama consumermessage
-func (j *JSONDecoder) Decode(msg *sarama.ConsumerMessage) (interface{}, error) {
+func (j *JSONDecoder) Decode(msg []byte) (interface{}, error) {
 	j.Log.Infof("Decoding JSON message...")
 	// Any valid JSON is more than 1 byte in length
-	if length := len(msg.Value); length < 1 {
+	if length := len(msg); length < 1 {
 		return nil, errors.New("Invalid JSON, length < 1")
 	}
 
-	return json.RawMessage(msg.Value), nil
+	return json.RawMessage(msg), nil
 }
