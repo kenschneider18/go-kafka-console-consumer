@@ -28,6 +28,7 @@ var (
 	log            = logrus.New()
 	errNoBrokers   = errors.New("at least one broker URL is required")
 	errNoTopic     = errors.New("a topic is required")
+	errNoType      = errors.New("a message type or path to type plugin is required")
 	errNoSchemas   = errors.New("a schema is required for message type Avro")
 	supportedTypes = []string{
 		"avro",
@@ -42,7 +43,7 @@ func main() {
 	topic := flag.String("topic", "", "Topic name")
 	groupID := flag.String("group", "", "Optional, pass the Kafka GroupId")
 	fromBeginning := flag.Bool("fromBeginning", false, "Optional, if passed the program will start at the earliest offset")
-	msgType := flag.String("type", "avro",
+	msgType := flag.String("type", "",
 		fmt.Sprintf("Pass the supported type name here or the path to your plugin. Out of the box supported types are %s", strings.Join(supportedTypes, ", ")))
 	schemas := flag.String("schemas", "", "If the message type uses schemas, pass them here.")
 
@@ -84,6 +85,10 @@ func checkArgs(brokers, topic, groupID, msgType, schemas *string) error {
 
 	if *topic == "" {
 		return errNoTopic
+	}
+
+	if *msgType == "" {
+		return errNoType
 	}
 
 	if strings.EqualFold(*msgType, "avro") && *schemas == "" {
