@@ -14,6 +14,7 @@ import (
 
 	"github.com/Shopify/sarama"
 	cluster "github.com/bsm/sarama-cluster"
+	"github.com/kenschneider18/go-kafka-consumer/pkg/decoders"
 	"github.com/kenschneider18/go-kafka-consumer/pkg/parser"
 	uuid "github.com/satori/go.uuid"
 	"github.com/sirupsen/logrus"
@@ -93,11 +94,11 @@ func checkArgs(brokers, topic, groupID, msgType, schemas *string) error {
 }
 
 func getDecoder(msgType string) parser.Decoder {
-	/*if msgType == "json" {
+	if msgType == "json" {
 		return &decoders.JSONDecoder{
 			Log: log,
 		}
-	}*/
+	}
 
 	// Open the plugin
 	plug, err := plugin.Open(msgType)
