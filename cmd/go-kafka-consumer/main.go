@@ -103,6 +103,8 @@ func getDecoder(msgType string) parser.Decoder {
 		return &decoders.JSONDecoder{
 			Log: log,
 		}
+	} else if msgType == "msgpack" {
+		return &decoders.MsgPackDecoder{}
 	}
 
 	// Open the plugin
@@ -118,11 +120,10 @@ func getDecoder(msgType string) parser.Decoder {
 	}
 
 	// Assert Decoder variable conforms to the
-	// parser.Decoder interface
+	// parser.Decoder interface. Not bothering
+	// to use safe method because the panic is
+	// more descriptive.
 	decoder := symDecoder.(parser.Decoder)
-	/*if !ok {
-		log.Fatalf("%s decoder failed type assertion.", msgType)
-	}*/
 
 	return decoder
 }
