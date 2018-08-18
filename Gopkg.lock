@@ -50,6 +50,12 @@
   revision = "2e65f85255dbc3072edf28d6b5b8efc472979f5a"
 
 [[projects]]
+  name = "github.com/linkedin/goavro"
+  packages = ["."]
+  revision = "fa8f6a30176ce945e115db0afad95ede93725eec"
+  version = "v2.3.0"
+
+[[projects]]
   name = "github.com/pierrec/lz4"
   packages = [
     ".",
@@ -57,6 +63,12 @@
   ]
   revision = "1958fd8fff7f115e79725b1288e0b878b3e06b00"
   version = "v2.0.3"
+
+[[projects]]
+  name = "github.com/pkg/errors"
+  packages = ["."]
+  revision = "645ef00459ed84a119197bfb8d8205042c6df63d"
+  version = "v0.8.0"
 
 [[projects]]
   branch = "master"
@@ -125,6 +137,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "5b0a5972380c86bd01a30346b0eb7fd28e0f281852e28eedb49f16fd01aa6b46"
+  inputs-digest = "1fb371f292164089b23de8153237a8cbb07572cd5726cec91f0fb2e2940ca688"
   solver-name = "gps-cdcl"
   solver-version = 1

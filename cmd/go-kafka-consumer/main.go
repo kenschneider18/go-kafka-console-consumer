@@ -46,6 +46,7 @@ func main() {
 	msgType := flag.String("type", "",
 		fmt.Sprintf("Pass the supported type name here or the path to your plugin. Out of the box supported types are %s", strings.Join(supportedTypes, ", ")))
 	schemas := flag.String("schemas", "", "If the message type uses schemas, pass them here.")
+	converterPath := flag.String("converter", "", "Optional, pass a converter plugin to convert addition fields for avro messages")
 
 	flag.Parse()
 
@@ -59,7 +60,7 @@ func main() {
 	// Create a new consumer, blocks until connection to brokers established
 	consumer := newConsumer(brokersSlice, *topic, *groupID, *fromBeginning)
 
-	decoder := getDecoder(*msgType)
+	decoder := getDecoder(*msgType, *converterPath)
 
 	parser, err := parser.New(consumer, *topic, *schemas, decoder, log)
 	if err != nil {
@@ -98,13 +99,32 @@ func checkArgs(brokers, topic, groupID, msgType, schemas *string) error {
 	return nil
 }
 
-func getDecoder(msgType string) parser.Decoder {
+func getDecoder(msgType, converterPath string) parser.Decoder {
 	if msgType == "json" {
 		return &decoders.JSONDecoder{
 			Log: log,
 		}
 	} else if msgType == "msgpack" {
 		return &decoders.MsgPackDecoder{}
+	} else if msgType == "avro" {
+		// Look to see if a converter has been passed
+		var converter decoders.Converter
+		if converterPath != "" {
+			cplug, err := plugin.Open(converterPath)
+			if err != nil {
+				log.Fatalf("Error linking avro converter: %s\n", err.Error())
+			}
+
+			symConverter, err := cplug.Lookup("Converter")
+			if err != nil {
+				log.Fatalf("Error loading avro converter: %s\n", err.Error())
+			}
+
+			converter = symConverter.(decoders.Converter)
+		}
+		return &decoders.AvroDecoder{
+			Converter: converter,
+		}
 	}
 
 	// Open the plugin
@@ -124,6 +144,9 @@ func getDecoder(msgType string) parser.Decoder {
 	// to use safe method because the panic is
 	// more descriptive.
 	decoder := symDecoder.(parser.Decoder)
+	// don't use 'ok' to check the assertion,
+	// the message displayed by the panic is
+	// more useful than a prettier error message here
 
 	return decoder
 }
