@@ -82,10 +82,9 @@ func (a *AvroDecoder) Decode(msg []byte) (interface{}, error) {
 		return nil, ErrAssertingType
 	}
 
-	err = castFields(casted)
-	if err != nil {
-		return nil, err
-	}
+	// Type assert on specific fields so they're
+	// printed properly by json.Marshal
+	castFields(casted)
 
 	// If a converter is passed in, use it to further
 	// decode fields.
@@ -96,32 +95,24 @@ func (a *AvroDecoder) Decode(msg []byte) (interface{}, error) {
 		}
 	}
 
-	return nil, nil
+	return casted, nil
 }
 
 // Convert any nested struct values to
 // a marshallable format
-func castFields(casted map[string]interface{}) error {
+func castFields(casted map[string]interface{}) {
 	for _, value := range casted {
 		switch value.(type) {
 		case map[string]interface{}:
-			err := castFields(value.(map[string]interface{}))
-			if err != nil {
-				return err
-			}
+			castFields(value.(map[string]interface{}))
 		case []interface{}:
 			elements := value.([]interface{})
 			for _, element := range elements {
-				nested, ok := element.(map[string]interface{})
-				if !ok {
-					return ErrAssertingType
-				}
-				err := castFields(nested)
-				if err != nil {
-					return err
+				switch element.(type) {
+				case map[string]interface{}:
+					castFields(element.(map[string]interface{}))
 				}
 			}
 		}
 	}
-	return nil
 }
