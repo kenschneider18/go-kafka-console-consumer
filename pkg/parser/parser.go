@@ -76,10 +76,10 @@ func (p *Parser) Serve() chan struct{} {
 					data, err := p.decoder.Decode(msg.Value)
 					if err != nil {
 						p.log.Errorf("Error decoding message: %s", err.Error())
+					} else {
+						// Print message as JSON
+						p.printJSON(data)
 					}
-
-					// Print message as JSON
-					p.printJSON(data)
 				}
 			case err, more := <-p.consumer.Errors():
 				if more {
