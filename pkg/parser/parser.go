@@ -3,7 +3,8 @@ package parser
 import (
 	"encoding/json"
 
-	"github.com/bsm/sarama-cluster"
+	"github.com/Shopify/sarama"
+	cluster "github.com/bsm/sarama-cluster"
 	"github.com/sirupsen/logrus"
 )
 
@@ -22,11 +23,20 @@ type (
 		Decode([]byte) (interface{}, error)
 	}
 
+	// Consumer is the interface for a Kafka consumer
+	// By using an interface that matches bsm/sarama-cluster
+	// instead of passing in an instance, testing is made easy
+	Consumer interface {
+		Messages() <-chan *sarama.ConsumerMessage
+		Errors() <-chan error
+		Notifications() <-chan *cluster.Notification
+	}
+
 	// Parser consumes from a Kafka topic, calls
 	// message decoders, and prints the message to
 	// the console in JSON format
 	Parser struct {
-		consumer *cluster.Consumer
+		consumer Consumer
 		topic    string
 		decoder  Decoder
 		log      *logrus.Logger
@@ -34,7 +44,7 @@ type (
 )
 
 // New intializes a new Parser struct
-func New(consumer *cluster.Consumer, topic string, schemas string, decoder Decoder, log *logrus.Logger) (*Parser, error) {
+func New(consumer Consumer, topic string, schemas string, decoder Decoder, log *logrus.Logger) (*Parser, error) {
 	err := decoder.ValidateSchemas(schemas)
 	if err != nil {
 		return nil, err
@@ -56,7 +66,7 @@ func (p *Parser) Serve() chan struct{} {
 	done := make(chan struct{}, 1)
 
 	go func() {
-		messageCount := 0
+		//messageCount := 0
 		for {
 			select {
 			case msg, more := <-p.consumer.Messages():
@@ -90,7 +100,8 @@ func (p *Parser) Serve() chan struct{} {
 					p.log.Warnf("Rebalanced: %+v", notification)
 				}
 			case <-done:
-				p.log.Infof("Processed a total of %d messages.", messageCount)
+				// TODO figure out why log isn't done fast enough
+				//p.log.Infof("Processed a total of %d messages.", messageCount)
 				return
 			}
 		}
