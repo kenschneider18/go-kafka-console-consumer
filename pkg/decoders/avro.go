@@ -10,22 +10,20 @@ import (
 
 const (
 	// ErrReadingSchemaWrapper wraps errors returned while reading the schema file
-	ErrReadingSchemaWrapper = "Error reading schema %s"
+	ErrReadingSchemaWrapper = "error reading schema %s"
 	// ErrCreatingCodecWrapper wraps errors returned while creating the go-avro codec
-	ErrCreatingCodecWrapper = "Error creating codec for schema %s"
+	ErrCreatingCodecWrapper = "error creating codec for schema %s"
 	// ErrDecodingMessageWrapper wraps errors returned decoding the message
-	ErrDecodingMessageWrapper = "Error decoding message"
-	// ErrConvertingFieldsWrapper wraps errors returned when converting fields
-	ErrConvertingFieldsWrapper = "Error converting fields"
+	ErrDecodingMessageWrapper = "error decoding message"
 )
 
 var (
 	// ErrInvalidSchema denotes that the schema file is not in the correct format
-	ErrInvalidSchema = errors.New("Invalid schema, schemas must be .avsc files")
+	ErrInvalidSchema = errors.New("invalid schema, schemas must be .avsc files")
 	// ErrNoCodec denotes that Decode has been called, but no go-avro codec has been created for it
-	ErrNoCodec = errors.New("Could not find codec. Was ValidateSchemas called yet?")
+	ErrNoCodec = errors.New("could not find codec. Was ValidateSchemas called yet?")
 	// ErrAssertingType denotes that one or more fields failed type assertion
-	ErrAssertingType = errors.New("Could not decode message, type assertion failed")
+	ErrAssertingType = errors.New("could not decode message, type assertion failed")
 )
 
 // AvroDecoder implements the decoder interface

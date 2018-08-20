@@ -24,7 +24,7 @@ func (j *JSONDecoder) Decode(msg []byte) (interface{}, error) {
 	j.Log.Infof("Decoding JSON message...")
 	// Any valid JSON is more than 1 byte in length
 	if length := len(msg); length < 1 {
-		return nil, errors.New("Invalid JSON, length < 1")
+		return nil, errors.New("invalid JSON, length < 1")
 	}
 
 	return json.RawMessage(msg), nil
