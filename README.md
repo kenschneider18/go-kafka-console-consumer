@@ -5,7 +5,7 @@ go-kafka-consumer is an extendable Kafka console consumer written in golang that
 There is out of the box support for several encodings, if your encoding is not supported you can write a custom decoder and pass it as an argument to this program and use that instead.
 
 ### Rationale
-In several projects I've worked on, I've found the ability to look and see what's sitting in Kafka to be incredibly useful. Apache saw the usefulness in this too so bundled with Kafka is the `kafka-console-consumer.sh` script. Unfortuantely, if you send the messages encoded in any way the bundled console consumer will still spit out messages but they likely won't be human readable. This console consumer aims to fix that.
+In several projects I've worked on, I've found the ability to look and see what's sitting in Kafka to be incredibly useful. Apache saw the usefulness in this too so bundled with Kafka is the script `kafka-console-consumer.sh`. Unfortuantely, if you send the messages encoded in any way the bundled console consumer will still spit out messages but they likely won't be readable. This console consumer aims to fix that.
 
 
 
@@ -41,7 +41,7 @@ No matter which installation method is used the required arguments for the progr
 ```
   -bootstrap-server
   		Comma separated list of broker URLs
-  -fromBeginning
+  -from-beginning
   		By default the program starts from the latest offset,
   		passing this will make the program start from
   		the earliest offset
