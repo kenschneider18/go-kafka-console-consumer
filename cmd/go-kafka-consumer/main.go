@@ -42,7 +42,7 @@ func main() {
 	brokers := flag.String("bootstrap-server", "", "Comma separated Kafka Broker URLs")
 	topic := flag.String("topic", "", "Topic name")
 	groupID := flag.String("group", "", "Optional, pass the Kafka GroupId")
-	fromBeginning := flag.Bool("fromBeginning", false, "Optional, if passed the program will start at the earliest offset")
+	fromBeginning := flag.Bool("from-beginning", false, "Optional, if passed the program will start at the earliest offset")
 	msgType := flag.String("type", "",
 		fmt.Sprintf("Pass the supported type name here or the path to your plugin. Out of the box supported types are %s", strings.Join(supportedTypes, ", ")))
 	schemas := flag.String("schemas", "", "If the message type uses schemas, pass them here.")
