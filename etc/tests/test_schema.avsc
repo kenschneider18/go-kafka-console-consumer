@@ -1,0 +1,10 @@
+{
+     "type": "record",
+     "namespace": "com.example",
+     "name": "FullName",
+     "fields": [
+       { "name": "firstName", "type": "string" },
+       { "name": "lastName", "type": "string" },
+       { "name": "json", "type": "bytes" }
+     ]
+} 
