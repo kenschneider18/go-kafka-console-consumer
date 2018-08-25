@@ -7,7 +7,7 @@ There is out of the box support for a few encodings, if your encoding isn't supp
 ### Rationale
 In several projects I've worked on, I've found the ability to look and see what's sitting in Kafka to be incredibly useful. Apache saw the usefulness in this too so bundled with Kafka is the script `kafka-console-consumer.sh`. Unfortuantely, if you send the messages encoded in any way the consumer will still spit out messages but they likely won't be readable. This program aims to solve that.
 
-As of this writing there's an open [issue](https://issues.apache.org/jira/browse/KAFKA-2526) to fix `kafka-console-consumer.sh`. It could be working now, but since I work mostly in Go anyway I haven't tried it. If you've already written SerDes in Java it's worth trying before you rewrite them in Go.
+As of this writing there's an open [issue](https://issues.apache.org/jira/browse/KAFKA-2526) to fix this functionality in `kafka-console-consumer.sh`. It could be working now, but since I work mostly in Go anyway I haven't tried it. If you've already written SerDes in Java it's worth trying before you rewrite them in Go.
 
 
 ## Installation
@@ -40,13 +40,13 @@ go install ./...
 The possible arguments for the program are:
 
 ```
-  -bootstrap-servers (required)
+  -bootstrap-server (required)
   		Comma separated list of broker URLs
   -from-beginning
   		By default the program starts from the latest offset,
   		passing this will start it from the earliest offset
   		 (if you pass a group ID this may not behave
-  		 as expected)
+  		 as expected, see `group` below)
   -schemas string
     	If the message type you pass requires schemas,
     	pass them here (The included Avro decoder only
@@ -140,9 +140,9 @@ Like decoder plugins, converters must implement an interface to work
 	}
 ```
 
-Converter plugins must expose an instance with the variable `Converter`.
+Converter plugins must expose an instance with the variable name `Converter`.
 
-`ConvertFields` will be passed the decoded record as a `map[string]interface{}`. This function should parse the record and type assert fields as necessary so they can be better represented as they're printed to the console. I will be adding an example converter soon.
+`ConvertFields` will be passed the decoded record as a `map[string]interface{}`. This function should parse the record and type assert fields as necessary so they can be better represented in the console. I will be adding an example converter soon.
 
 #### Compiling plugins
 
