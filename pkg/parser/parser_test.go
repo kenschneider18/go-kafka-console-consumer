@@ -11,7 +11,7 @@ import (
 
 	"github.com/Shopify/sarama"
 	"github.com/bsm/sarama-cluster"
-	"github.com/kenschneider18/go-kafka-consumer/pkg/parser"
+	"github.com/kenschneider18/go-kafka-console-consumer/pkg/parser"
 	"github.com/sirupsen/logrus/hooks/test"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"

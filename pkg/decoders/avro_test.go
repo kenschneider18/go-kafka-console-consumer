@@ -8,7 +8,7 @@ import (
 
 	"github.com/linkedin/goavro"
 
-	"github.com/kenschneider18/go-kafka-consumer/pkg/decoders"
+	"github.com/kenschneider18/go-kafka-console-consumer/pkg/decoders"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )

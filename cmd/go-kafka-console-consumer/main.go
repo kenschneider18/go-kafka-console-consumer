@@ -14,8 +14,8 @@ import (
 
 	"github.com/Shopify/sarama"
 	cluster "github.com/bsm/sarama-cluster"
-	"github.com/kenschneider18/go-kafka-consumer/pkg/decoders"
-	"github.com/kenschneider18/go-kafka-consumer/pkg/parser"
+	"github.com/kenschneider18/go-kafka-console-consumer/pkg/decoders"
+	"github.com/kenschneider18/go-kafka-console-consumer/pkg/parser"
 	uuid "github.com/satori/go.uuid"
 	"github.com/sirupsen/logrus"
 )
