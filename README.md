@@ -1,3 +1,5 @@
+[![Go Report Card](https://goreportcard.com/badge/github.com/kenschneider18/go-kafka-console-consumer)](https://goreportcard.com/report/github.com/kenschneider18/go-kafka-console-consumer)
+
 # go-kafka-console-consumer
 
 go-kafka-console-consumer is an extendable Kafka consumer written in Go that consumes from a given topic and writes the messages to the console as JSON.
