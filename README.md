@@ -43,7 +43,7 @@ The possible arguments for the program are:
 
 ```
   -bootstrap-server (required)
-  		Comma separated list of broker URLs
+  		Kafka broker URL
   -from-beginning
   		By default the program starts from the latest offset,
   		passing this will start it from the earliest offset
