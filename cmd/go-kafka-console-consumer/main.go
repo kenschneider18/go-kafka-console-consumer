@@ -1,9 +1,12 @@
 package main
 
 import (
+	"crypto/tls"
+	"crypto/x509"
 	"errors"
 	"flag"
 	"fmt"
+	"io/ioutil"
 	"math"
 	"os"
 	"os/signal"
@@ -37,6 +40,10 @@ var (
 	}
 )
 
+type TLSConfigurator interface {
+	GetConfig() (*tls.Config, error)
+}
+
 func main() {
 	// Read config from command line
 	brokers := flag.String("bootstrap-server", "", "Comma separated Kafka Broker URLs")
@@ -47,6 +54,10 @@ func main() {
 		fmt.Sprintf("Pass the supported type name here or the path to your plugin. Out of the box supported types are %s", strings.Join(supportedTypes, ", ")))
 	schemas := flag.String("schemas", "", "If the message type uses schemas, pass them here.")
 	converterPath := flag.String("converter", "", "Optional, pass a converter plugin to convert addition fields for avro messages")
+	tlsConfigPath := flag.String("tls-configurator", "", "Optional, pass a tls plugin to grab your TLS configuration on the fly")
+	clientCert := flag.String("client-cert", "", "Optional, pass client cert path for TLS")
+	clientKey := flag.String("client-key", "", "Optional, pass client key path for TLS")
+	caCert := flag.String("ca-cert", "", "Optional, pass CA cert path for TLS")
 
 	flag.Parse()
 
@@ -55,10 +66,15 @@ func main() {
 		log.Fatalf("Could not validate args: %s", err.Error())
 	}
 
+	tlsConfig, err := getTLSConfig(tlsConfigPath, clientCert, clientKey, caCert)
+	if err != nil {
+		log.Fatalf("Failed to create TLS config: %s", err.Error())
+	}
+
 	brokersSlice := strings.Split(*brokers, ",")
 
 	// Create a new consumer, blocks until connection to brokers established
-	consumer := newConsumer(brokersSlice, *topic, *groupID, *fromBeginning)
+	consumer := newConsumer(brokersSlice, *topic, *groupID, *fromBeginning, tlsConfig)
 
 	decoder := getDecoder(*msgType, *converterPath)
 
@@ -110,12 +126,7 @@ func getDecoder(msgType, converterPath string) parser.Decoder {
 		// Look to see if a converter has been passed
 		var converter decoders.Converter
 		if converterPath != "" {
-			cplug, err := plugin.Open(converterPath)
-			if err != nil {
-				log.Fatalf("Error linking avro converter: %s\n", err.Error())
-			}
-
-			symConverter, err := cplug.Lookup("Converter")
+			symConverter, err := loadPlugin(converterPath, "Converter")
 			if err != nil {
 				log.Fatalf("Error loading avro converter: %s\n", err.Error())
 			}
@@ -127,16 +138,9 @@ func getDecoder(msgType, converterPath string) parser.Decoder {
 		}
 	}
 
-	// Open the plugin
-	plug, err := plugin.Open(msgType)
+	symDecoder, err := loadPlugin(msgType, "Decoder")
 	if err != nil {
-		log.Fatalf("Error linking %s decoder: %s\n", msgType, err.Error())
-	}
-
-	// Look for exported Decoder
-	symDecoder, err := plug.Lookup("Decoder")
-	if err != nil {
-		log.Fatalf("Error loading %s Decoder: %s\n", msgType, err.Error())
+		log.Fatalf("Error loading %s decoder: %s\n", msgType, err.Error())
 	}
 
 	// Assert Decoder variable conforms to the
@@ -151,12 +155,17 @@ func getDecoder(msgType, converterPath string) parser.Decoder {
 	return decoder
 }
 
-func newConsumer(brokers []string, topic string, groupID string, fromBeginning bool) *cluster.Consumer {
+func newConsumer(brokers []string, topic string, groupID string, fromBeginning bool, tlsConfig *tls.Config) *cluster.Consumer {
 	// Sarama cluster config
 	config := cluster.NewConfig()
 	config.Consumer.Return.Errors = true
 	config.Group.Return.Notifications = true
 	config.Version = sarama.V0_11_0_0
+
+	if tlsConfig != nil {
+		config.Net.TLS.Config = tlsConfig
+		config.Net.TLS.Enable = true
+	}
 
 	if fromBeginning {
 		config.Consumer.Offsets.Initial = sarama.OffsetOldest
@@ -191,4 +200,70 @@ func newConsumer(brokers []string, topic string, groupID string, fromBeginning b
 	}
 
 	return consumer
+}
+
+func getTLSConfig(tlsConfigPath, clientCertFile, clientKeyFile, caCertFile *string) (*tls.Config, error) {
+	var tlsConfig *tls.Config
+	var tlsSymbol plugin.Symbol
+	var err error
+	if *tlsConfigPath != "" {
+		tlsSymbol, err = loadPlugin(*tlsConfigPath, "TLS")
+		if err != nil {
+			return nil, err
+		}
+
+		// If the plugin interface is wrong, panic because the
+		// error message is more descriptive
+		tlsConfigurator := tlsSymbol.(TLSConfigurator)
+
+		// Get the TLS config however it's supposed to be done
+		tlsConfig, err = tlsConfigurator.GetConfig()
+		if err != nil {
+			return nil, err
+		}
+	} else if *clientCertFile != "" && *clientKeyFile != "" && *caCertFile != "" {
+		tlsConfig, err = newTLSConfig(*clientCertFile, *clientKeyFile, *caCertFile)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	return tlsConfig, nil
+}
+
+func newTLSConfig(clientCertFile, clientKeyFile, caCertFile string) (*tls.Config, error) {
+	tlsConfig := tls.Config{}
+
+	// Load client cert
+	cert, err := tls.LoadX509KeyPair(clientCertFile, clientKeyFile)
+	if err != nil {
+		return &tlsConfig, err
+	}
+	tlsConfig.Certificates = []tls.Certificate{cert}
+
+	// Load CA cert
+	caCert, err := ioutil.ReadFile(caCertFile)
+	if err != nil {
+		return &tlsConfig, err
+	}
+	caCertPool := x509.NewCertPool()
+	caCertPool.AppendCertsFromPEM(caCert)
+	tlsConfig.RootCAs = caCertPool
+
+	tlsConfig.BuildNameToCertificate()
+	return &tlsConfig, err
+}
+
+func loadPlugin(pluginPath, symbolName string) (plugin.Symbol, error) {
+	plug, err := plugin.Open(pluginPath)
+	if err != nil {
+		return nil, err
+	}
+
+	symbol, err := plug.Lookup(symbolName)
+	if err != nil {
+		return nil, err
+	}
+
+	return symbol, nil
 }
